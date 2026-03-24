@@ -16,6 +16,7 @@ class EigenfaceModel:
     gallery_embeddings: np.ndarray
     gallery_labels: np.ndarray
     metric: MetricName
+    image_size: tuple[int, int]
 
 
 def train_model_from_vectors(
@@ -23,6 +24,7 @@ def train_model_from_vectors(
     labels: np.ndarray,
     n_components: int,
     metric: MetricName = "euclidean",
+    image_size: tuple[int, int] = (64, 64),
 ) -> EigenfaceModel:
     """Train Eigenfaces model from feature vectors and labels."""
     if X.ndim != 2:
@@ -39,6 +41,7 @@ def train_model_from_vectors(
         gallery_embeddings=gallery_embeddings,
         gallery_labels=labels.astype(str),
         metric=metric,
+        image_size=image_size,
     )
 
 

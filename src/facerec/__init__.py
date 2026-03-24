@@ -2,6 +2,7 @@
 
 from facerec.data import discover_orl_images, split_per_identity
 from facerec.knn import predict_nearest_neighbor
+from facerec.model_io import load_model, save_model
 from facerec.pca import PCAState, fit_pca, transform_pca
 from facerec.pipeline import (
     EigenfaceModel,
@@ -16,6 +17,8 @@ __all__ = [
     "split_per_identity",
     "preprocess_image",
     "predict_nearest_neighbor",
+    "save_model",
+    "load_model",
     "PCAState",
     "fit_pca",
     "transform_pca",
