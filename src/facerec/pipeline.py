@@ -1,0 +1,59 @@
+"""Training and inference pipeline for Eigenfaces + nearest neighbor."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+
+from facerec.knn import MetricName, predict_nearest_neighbor
+from facerec.pca import PCAState, fit_pca, transform_pca
+
+
+@dataclass(frozen=True)
+class EigenfaceModel:
+    pca: PCAState
+    gallery_embeddings: np.ndarray
+    gallery_labels: np.ndarray
+    metric: MetricName
+
+
+def train_model_from_vectors(
+    X: np.ndarray,
+    labels: np.ndarray,
+    n_components: int,
+    metric: MetricName = "euclidean",
+) -> EigenfaceModel:
+    """Train Eigenfaces model from feature vectors and labels."""
+    if X.ndim != 2:
+        raise ValueError("X must be a 2D array with shape (n_samples, n_features)")
+    if labels.ndim != 1:
+        raise ValueError("labels must be a 1D array")
+    if X.shape[0] != labels.shape[0]:
+        raise ValueError("X sample count and labels length must match")
+
+    pca_state = fit_pca(X, n_components=n_components)
+    gallery_embeddings = transform_pca(X, pca_state)
+    return EigenfaceModel(
+        pca=pca_state,
+        gallery_embeddings=gallery_embeddings,
+        gallery_labels=labels.astype(str),
+        metric=metric,
+    )
+
+
+def embed_vectors(model: EigenfaceModel, X: np.ndarray) -> np.ndarray:
+    """Project input vectors into the trained PCA space."""
+    return transform_pca(X, model.pca)
+
+
+def predict_from_vector(
+    model: EigenfaceModel, vector: np.ndarray
+) -> tuple[str, float, int]:
+    """Predict nearest label for one input vector."""
+    if vector.ndim != 1:
+        raise ValueError("vector must be a 1D array")
+    embedded = embed_vectors(model, vector.reshape(1, -1))
+    return predict_nearest_neighbor(
+        embedded[0], model.gallery_embeddings, model.gallery_labels, metric=model.metric
+    )
