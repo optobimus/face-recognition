@@ -1,0 +1,12 @@
+[MASTER]
+ignore-patterns=^.*__pycache__.*$
+ignore-paths=src/face_recognition.egg-info
+
+[MESSAGES CONTROL]
+disable=missing-module-docstring,missing-function-docstring,missing-class-docstring,too-few-public-methods
+
+[FORMAT]
+max-line-length=100
+
+[DESIGN]
+max-args=8
