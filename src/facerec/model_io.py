@@ -35,19 +35,20 @@ def load_model(model_path: Path) -> EigenfaceModel:
     if not path.exists():
         raise FileNotFoundError(f"Model file does not exist: {path}")
     with np.load(path, allow_pickle=False) as data:
+        gallery_labels_array = np.asarray(data["gallery_labels"], dtype=str)
+        image_size_values = np.asarray(data["image_size"], dtype=np.int64).tolist()
+        metric_value = cast(MetricName, str(data["metric"]))
         pca = PCAState(
             mean=data["mean"],
             components=data["components"],
             singular_values=data["singular_values"],
             explained_variance=data["explained_variance"],
         )
-        metric = cast(MetricName, str(data["metric"].item()))
-        image_size_raw = data["image_size"]
-        image_size = (int(image_size_raw[0]), int(image_size_raw[1]))
+        image_size = (int(image_size_values[0]), int(image_size_values[1]))
         return EigenfaceModel(
             pca=pca,
             gallery_embeddings=data["gallery_embeddings"],
-            gallery_labels=data["gallery_labels"].astype(str),
-            metric=metric,
+            gallery_labels=gallery_labels_array,
+            metric=metric_value,
             image_size=image_size,
         )

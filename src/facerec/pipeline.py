@@ -20,22 +20,22 @@ class EigenfaceModel:
 
 
 def train_model_from_vectors(
-    X: np.ndarray,
+    x: np.ndarray,
     labels: np.ndarray,
     n_components: int,
     metric: MetricName = "euclidean",
     image_size: tuple[int, int] = (64, 64),
 ) -> EigenfaceModel:
     """Train Eigenfaces model from feature vectors and labels."""
-    if X.ndim != 2:
-        raise ValueError("X must be a 2D array with shape (n_samples, n_features)")
+    if x.ndim != 2:
+        raise ValueError("x must be a 2D array with shape (n_samples, n_features)")
     if labels.ndim != 1:
         raise ValueError("labels must be a 1D array")
-    if X.shape[0] != labels.shape[0]:
-        raise ValueError("X sample count and labels length must match")
+    if x.shape[0] != labels.shape[0]:
+        raise ValueError("x sample count and labels length must match")
 
-    pca_state = fit_pca(X, n_components=n_components)
-    gallery_embeddings = transform_pca(X, pca_state)
+    pca_state = fit_pca(x, n_components=n_components)
+    gallery_embeddings = transform_pca(x, pca_state)
     return EigenfaceModel(
         pca=pca_state,
         gallery_embeddings=gallery_embeddings,
@@ -45,9 +45,9 @@ def train_model_from_vectors(
     )
 
 
-def embed_vectors(model: EigenfaceModel, X: np.ndarray) -> np.ndarray:
+def embed_vectors(model: EigenfaceModel, x: np.ndarray) -> np.ndarray:
     """Project input vectors into the trained PCA space."""
-    return transform_pca(X, model.pca)
+    return transform_pca(x, model.pca)
 
 
 def predict_from_vector(

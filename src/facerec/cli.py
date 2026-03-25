@@ -15,7 +15,9 @@ from facerec.pipeline import predict_from_vector, train_model_from_vectors
 from facerec.preprocess import preprocess_image
 
 
-def _build_vectors(items: list[tuple[Path, str]], image_size: tuple[int, int]) -> tuple[np.ndarray, np.ndarray]:
+def _build_vectors(
+    items: list[tuple[Path, str]], image_size: tuple[int, int]
+) -> tuple[np.ndarray, np.ndarray]:
     vectors: list[np.ndarray] = []
     labels: list[str] = []
     for path, label in items:
@@ -35,9 +37,9 @@ def _train_command(args: argparse.Namespace) -> int:
         train_per_identity=int(args.train_per_identity),
         seed=int(args.seed),
     )
-    X_train, y_train = _build_vectors(train_items, image_size=image_size)
+    x_train, y_train = _build_vectors(train_items, image_size=image_size)
     model = train_model_from_vectors(
-        X_train,
+        x_train,
         y_train,
         n_components=int(args.n_components),
         metric=args.metric,
@@ -45,7 +47,7 @@ def _train_command(args: argparse.Namespace) -> int:
     )
     save_model(model, model_out)
     print(
-        f"trained_samples={X_train.shape[0]} components={args.n_components} model={model_out}"
+        f"trained_samples={x_train.shape[0]} components={args.n_components} model={model_out}"
     )
     return 0
 
@@ -101,7 +103,9 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--dataset-root", required=True)
     train_parser.add_argument("--model-out", required=True)
     train_parser.add_argument("--n-components", type=int, default=20)
-    train_parser.add_argument("--metric", choices=["euclidean", "cosine"], default="euclidean")
+    train_parser.add_argument(
+        "--metric", choices=["euclidean", "cosine"], default="euclidean"
+    )
     train_parser.add_argument("--train-per-identity", type=int, default=6)
     train_parser.add_argument("--seed", type=int, default=42)
     train_parser.add_argument("--image-width", type=int, default=64)

@@ -15,11 +15,11 @@ class PCAState:
     explained_variance: np.ndarray
 
 
-def fit_pca(X: np.ndarray, n_components: int) -> PCAState:
+def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
     """Fit PCA with SVD and return the fitted state"""
-    if X.ndim != 2:
-        raise ValueError("X must be a 2D array with shape (n_samples, n_features)")
-    n_samples, n_features = X.shape
+    if x.ndim != 2:
+        raise ValueError("x must be a 2D array with shape (n_samples, n_features)")
+    n_samples, n_features = x.shape
     if n_samples < 2:
         raise ValueError("At least 2 samples are required to fit PCA")
     max_components = min(n_samples, n_features)
@@ -28,8 +28,8 @@ def fit_pca(X: np.ndarray, n_components: int) -> PCAState:
             f"n_components must be in [1, {max_components}], got {n_components}"
         )
 
-    mean = X.mean(axis=0, dtype=np.float64)
-    centered = X - mean
+    mean = x.mean(axis=0, dtype=np.float64)
+    centered = x - mean
     _, singular_values, vt = np.linalg.svd(centered, full_matrices=False)
     components = vt[:n_components]
     explained_variance = (singular_values**2) / (n_samples - 1)
@@ -42,13 +42,13 @@ def fit_pca(X: np.ndarray, n_components: int) -> PCAState:
     )
 
 
-def transform_pca(X: np.ndarray, state: PCAState) -> np.ndarray:
+def transform_pca(x: np.ndarray, state: PCAState) -> np.ndarray:
     """Project samples into the PCA component space."""
-    if X.ndim != 2:
-        raise ValueError("X must be a 2D array with shape (n_samples, n_features)")
-    if X.shape[1] != state.mean.shape[0]:
+    if x.ndim != 2:
+        raise ValueError("x must be a 2D array with shape (n_samples, n_features)")
+    if x.shape[1] != state.mean.shape[0]:
         raise ValueError(
-            "X has incompatible feature dimension for the provided PCA state"
+            "x has incompatible feature dimension for the provided PCA state"
         )
-    centered = X - state.mean
+    centered = x - state.mean
     return centered @ state.components.T
