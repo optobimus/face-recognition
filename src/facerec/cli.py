@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
 
 from facerec.data import discover_orl_images, split_per_identity
+from facerec.eval import evaluate_predictions
 from facerec.model_io import load_model, save_model
 from facerec.pipeline import predict_from_vector, train_model_from_vectors
 from facerec.preprocess import preprocess_image
@@ -56,6 +58,43 @@ def _predict_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _evaluate_command(args: argparse.Namespace) -> int:
+    model = load_model(Path(args.model))
+    dataset_root = Path(args.dataset_root)
+    report_out = Path(args.report_out)
+
+    items = discover_orl_images(dataset_root)
+    _, test_items = split_per_identity(
+        items,
+        train_per_identity=int(args.train_per_identity),
+        seed=int(args.seed),
+    )
+    if len(test_items) == 0:
+        raise ValueError("Test split is empty for the provided configuration")
+
+    y_true: list[str] = []
+    y_pred: list[str] = []
+    for image_path, label in test_items:
+        vector = preprocess_image(image_path, image_size=model.image_size)
+        pred_label, _, _ = predict_from_vector(model, vector)
+        y_true.append(label)
+        y_pred.append(pred_label)
+
+    summary = evaluate_predictions(y_true, y_pred)
+    report = {
+        "total": summary.total,
+        "correct": summary.correct,
+        "accuracy": summary.accuracy,
+        "confusion_matrix": summary.confusion_matrix,
+    }
+    report_out.parent.mkdir(parents=True, exist_ok=True)
+    report_out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(
+        f"evaluated_samples={summary.total} accuracy={summary.accuracy:.6f} report={report_out}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="facerec")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -75,6 +114,14 @@ def build_parser() -> argparse.ArgumentParser:
     predict_parser.add_argument("--model", required=True)
     predict_parser.add_argument("--image", required=True)
     predict_parser.set_defaults(handler=_predict_command)
+
+    evaluate_parser = subparsers.add_parser("evaluate")
+    evaluate_parser.add_argument("--model", required=True)
+    evaluate_parser.add_argument("--dataset-root", required=True)
+    evaluate_parser.add_argument("--report-out", required=True)
+    evaluate_parser.add_argument("--train-per-identity", type=int, default=6)
+    evaluate_parser.add_argument("--seed", type=int, default=42)
+    evaluate_parser.set_defaults(handler=_evaluate_command)
 
     return parser
 

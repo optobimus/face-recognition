@@ -1,4 +1,5 @@
 import io
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -17,6 +18,7 @@ class TestCLI(unittest.TestCase):
         self._create_identity("s1", count=3, base_value=30)
         self._create_identity("s2", count=3, base_value=220)
         self.model_path = self.root / "model.npz"
+        self.report_path = self.root / "eval.json"
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -86,3 +88,45 @@ class TestCLI(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("label=", output)
         self.assertIn("distance=", output)
+
+    def test_evaluate_command_writes_report(self):
+        main(
+            [
+                "train",
+                "--dataset-root",
+                str(self.dataset_root),
+                "--model-out",
+                str(self.model_path),
+                "--n-components",
+                "2",
+                "--train-per-identity",
+                "2",
+                "--image-width",
+                "8",
+                "--image-height",
+                "8",
+            ]
+        )
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            exit_code = main(
+                [
+                    "evaluate",
+                    "--model",
+                    str(self.model_path),
+                    "--dataset-root",
+                    str(self.dataset_root),
+                    "--report-out",
+                    str(self.report_path),
+                    "--train-per-identity",
+                    "2",
+                    "--seed",
+                    "42",
+                ]
+            )
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(self.report_path.exists())
+        report = json.loads(self.report_path.read_text(encoding="utf-8"))
+        self.assertIn("accuracy", report)
+        self.assertIn("confusion_matrix", report)
+        self.assertIn("evaluated_samples=", stdout.getvalue())
