@@ -53,3 +53,20 @@ class TestKNN(unittest.TestCase):
         query = np.array([0.0, 0.0], dtype=np.float64)
         with self.assertRaises(ValueError):
             predict_nearest_neighbor(query, self.gallery, self.labels, metric="l1")
+
+    def test_predict_nearest_neighbor_raises_for_non_vector_query(self):
+        query = np.array([[0.0, 0.0]], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            predict_nearest_neighbor(query, self.gallery, self.labels)
+
+    def test_predict_nearest_neighbor_raises_for_non_matrix_gallery(self):
+        query = np.array([0.0, 0.0], dtype=np.float64)
+        gallery = np.array([0.0, 0.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            predict_nearest_neighbor(query, gallery, self.labels)
+
+    def test_predict_nearest_neighbor_raises_for_non_vector_labels(self):
+        query = np.array([0.0, 0.0], dtype=np.float64)
+        labels = np.array([["a"], ["b"], ["c"], ["d"]], dtype=str)
+        with self.assertRaises(ValueError):
+            predict_nearest_neighbor(query, self.gallery, labels)

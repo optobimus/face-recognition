@@ -69,8 +69,6 @@ def _evaluate_command(args: argparse.Namespace) -> int:
         train_per_identity=int(args.train_per_identity),
         seed=int(args.seed),
     )
-    if len(test_items) == 0:
-        raise ValueError("Test split is empty for the provided configuration")
 
     y_true: list[str] = []
     y_pred: list[str] = []

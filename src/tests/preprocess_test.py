@@ -36,3 +36,7 @@ class TestPreprocess(unittest.TestCase):
     def test_preprocess_image_raises_for_missing_file(self):
         with self.assertRaises(FileNotFoundError):
             preprocess_image(self.root / "missing.pgm")
+
+    def test_preprocess_image_raises_for_directory_path(self):
+        with self.assertRaises(ValueError):
+            preprocess_image(self.root)

@@ -35,6 +35,18 @@ class TestData(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             discover_orl_images(self.root / "missing")
 
+    def test_discover_orl_images_raises_for_non_directory_root(self):
+        file_path = self.root / "not_a_dir.txt"
+        file_path.write_text("x", encoding="utf-8")
+        with self.assertRaises(NotADirectoryError):
+            discover_orl_images(file_path)
+
+    def test_discover_orl_images_raises_for_empty_directory(self):
+        empty_root = self.root / "empty_root"
+        empty_root.mkdir(parents=True, exist_ok=True)
+        with self.assertRaises(ValueError):
+            discover_orl_images(empty_root)
+
     def test_split_per_identity_returns_expected_counts(self):
         items = discover_orl_images(self.root)
         train, test = split_per_identity(items, train_per_identity=2, seed=42)
@@ -56,3 +68,12 @@ class TestData(unittest.TestCase):
         items = discover_orl_images(self.root)
         with self.assertRaises(ValueError):
             split_per_identity(items, train_per_identity=4, seed=1)
+
+    def test_split_per_identity_raises_for_non_positive_train_size(self):
+        items = discover_orl_images(self.root)
+        with self.assertRaises(ValueError):
+            split_per_identity(items, train_per_identity=0, seed=1)
+
+    def test_split_per_identity_raises_for_empty_items(self):
+        with self.assertRaises(ValueError):
+            split_per_identity([], train_per_identity=1, seed=1)

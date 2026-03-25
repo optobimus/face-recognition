@@ -24,3 +24,11 @@ class TestEval(unittest.TestCase):
     def test_evaluate_predictions_raises_for_empty_input(self):
         with self.assertRaises(ValueError):
             evaluate_predictions([], [])
+
+    def test_build_confusion_matrix_raises_for_length_mismatch(self):
+        with self.assertRaises(ValueError):
+            build_confusion_matrix(["a", "b"], ["a"])
+
+    def test_evaluate_predictions_raises_for_length_mismatch(self):
+        with self.assertRaises(ValueError):
+            evaluate_predictions(["a", "b"], ["a"])

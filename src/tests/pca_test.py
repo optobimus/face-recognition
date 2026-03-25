@@ -51,3 +51,14 @@ class TestPCA(unittest.TestCase):
         a = transform_pca(self.X, state)
         b = transform_pca(self.X, state)
         self.assertTrue(np.array_equal(a, b))
+
+    def test_fit_pca_raises_for_non_matrix_input(self):
+        bad = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            fit_pca(bad, n_components=1)
+
+    def test_transform_pca_raises_for_non_matrix_input(self):
+        state = fit_pca(self.X, n_components=2)
+        bad = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            transform_pca(bad, state)

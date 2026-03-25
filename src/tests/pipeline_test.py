@@ -47,3 +47,13 @@ class TestPipeline(unittest.TestCase):
         bad = np.array([[1.0, 2.0, 3.0]], dtype=np.float64)
         with self.assertRaises(ValueError):
             predict_from_vector(model, bad)
+
+    def test_train_model_from_vectors_raises_for_non_matrix_input(self):
+        bad = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            train_model_from_vectors(bad, self.labels, n_components=2)
+
+    def test_train_model_from_vectors_raises_for_non_vector_labels(self):
+        bad_labels = np.array([["alice"], ["alice"], ["bob"], ["bob"]], dtype=str)
+        with self.assertRaises(ValueError):
+            train_model_from_vectors(self.X, bad_labels, n_components=2)
