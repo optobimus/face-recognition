@@ -42,16 +42,16 @@ def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
     cov = covariance_matrix(centered, denominator=n_samples - 1)
     explained_variance, components = top_k_eigenpairs_symmetric(cov, n_components)
 
-    singular_values = np.zeros(n_components, dtype=np.float64)
+    singular_values = [0.0 for _ in range(n_components)]
     for idx in range(n_components):
         eig = max(float(explained_variance[idx]), 0.0)
         singular_values[idx] = math.sqrt(eig * (n_samples - 1))
 
     return PCAState(
-        mean=mean,
-        components=components,
-        singular_values=singular_values,
-        explained_variance=explained_variance,
+        mean=np.asarray(mean, dtype=np.float64),
+        components=np.asarray(components, dtype=np.float64),
+        singular_values=np.asarray(singular_values, dtype=np.float64),
+        explained_variance=np.asarray(explained_variance, dtype=np.float64),
     )
 
 
@@ -64,12 +64,13 @@ def transform_pca(x: np.ndarray, state: PCAState) -> np.ndarray:
             "x has incompatible feature dimension for the provided PCA state"
         )
     centered = center_matrix(x, state.mean)
-    n_samples = centered.shape[0]
-    n_components = state.components.shape[0]
-    projected = np.zeros((n_samples, n_components), dtype=np.float64)
+    n_samples = len(centered)
+    components = state.components.tolist()
+    n_components = len(components)
+    projected = [[0.0 for _ in range(n_components)] for _ in range(n_samples)]
     for row in range(n_samples):
         for comp_idx in range(n_components):
-            projected[row, comp_idx] = vector_dot(
-                centered[row], state.components[comp_idx]
+            projected[row][comp_idx] = vector_dot(
+                centered[row], components[comp_idx]
             )
-    return projected
+    return np.asarray(projected, dtype=np.float64)

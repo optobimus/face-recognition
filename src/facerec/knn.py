@@ -11,16 +11,14 @@ from facerec.matrix_ops import argmin_index, cosine_distance, euclidean_distance
 MetricName = Literal["euclidean", "cosine"]
 
 
-def euclidean_distances(query: np.ndarray, gallery: np.ndarray) -> np.ndarray:
+def euclidean_distances(query: np.ndarray, gallery: np.ndarray) -> list[float]:
     """Compute Euclidean distances from query to each gallery vector."""
-    values = [euclidean_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
-    return np.array(values, dtype=np.float64)
+    return [euclidean_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
 
 
-def cosine_distances(query: np.ndarray, gallery: np.ndarray) -> np.ndarray:
+def cosine_distances(query: np.ndarray, gallery: np.ndarray) -> list[float]:
     """Compute cosine distances from query to each gallery vector."""
-    values = [cosine_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
-    return np.array(values, dtype=np.float64)
+    return [cosine_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
 
 
 def predict_nearest_neighbor(

@@ -3,167 +3,199 @@
 from __future__ import annotations
 
 import math
+from typing import Any
 
-import numpy as np
+
+def _is_iterable_value(value: Any) -> bool:
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
 
 
-def vector_dot(a: np.ndarray, b: np.ndarray) -> float:
+def _to_vector(values: Any, name: str) -> list[float]:
+    if not _is_iterable_value(values):
+        raise ValueError(f"{name} expects 1D vectors")
+    raw = values.tolist() if hasattr(values, "tolist") else list(values)
+    if len(raw) == 0:
+        return []
+    if _is_iterable_value(raw[0]):
+        raise ValueError(f"{name} expects 1D vectors")
+    return [float(item) for item in raw]
+
+
+def _to_matrix(values: Any, name: str) -> list[list[float]]:
+    if not _is_iterable_value(values):
+        raise ValueError(f"{name} expects a 2D matrix")
+    raw_rows = values.tolist() if hasattr(values, "tolist") else list(values)
+    if len(raw_rows) == 0:
+        raise ValueError(f"{name} expects a 2D matrix")
+    if not _is_iterable_value(raw_rows[0]):
+        raise ValueError(f"{name} expects a 2D matrix")
+    matrix: list[list[float]] = []
+    expected_len: int | None = None
+    for raw_row in raw_rows:
+        if not _is_iterable_value(raw_row):
+            raise ValueError(f"{name} expects a 2D matrix")
+        row = raw_row.tolist() if hasattr(raw_row, "tolist") else list(raw_row)
+        if expected_len is None:
+            expected_len = len(row)
+        elif expected_len != len(row):
+            raise ValueError("matrix rows must have equal length")
+        converted_row: list[float] = []
+        for item in row:
+            if _is_iterable_value(item):
+                raise ValueError(f"{name} expects a 2D matrix")
+            converted_row.append(float(item))
+        matrix.append(converted_row)
+    return matrix
+
+
+def vector_dot(a: Any, b: Any) -> float:
     """Compute dot product of two equal-length vectors."""
-    if a.ndim != 1 or b.ndim != 1:
-        raise ValueError("vector_dot expects 1D vectors")
-    if a.shape[0] != b.shape[0]:
+    vector_a = _to_vector(a, "vector_dot")
+    vector_b = _to_vector(b, "vector_dot")
+    if len(vector_a) != len(vector_b):
         raise ValueError("vector_dot expects equal-length vectors")
     total = 0.0
-    for idx in range(a.shape[0]):
-        total += float(a[idx]) * float(b[idx])
+    for value_a, value_b in zip(vector_a, vector_b):
+        total += value_a * value_b
     return total
 
 
-def vector_l2_norm(a: np.ndarray) -> float:
+def vector_l2_norm(a: Any) -> float:
     """Compute L2 norm of a vector."""
     return math.sqrt(vector_dot(a, a))
 
 
-def euclidean_distance(a: np.ndarray, b: np.ndarray) -> float:
+def euclidean_distance(a: Any, b: Any) -> float:
     """Compute Euclidean distance between two equal-length vectors."""
-    if a.ndim != 1 or b.ndim != 1:
-        raise ValueError("euclidean_distance expects 1D vectors")
-    if a.shape[0] != b.shape[0]:
+    vector_a = _to_vector(a, "euclidean_distance")
+    vector_b = _to_vector(b, "euclidean_distance")
+    if len(vector_a) != len(vector_b):
         raise ValueError("euclidean_distance expects equal-length vectors")
     squared_sum = 0.0
-    for idx in range(a.shape[0]):
-        diff = float(a[idx]) - float(b[idx])
+    for value_a, value_b in zip(vector_a, vector_b):
+        diff = value_a - value_b
         squared_sum += diff * diff
     return math.sqrt(squared_sum)
 
 
-def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
+def cosine_distance(a: Any, b: Any) -> float:
     """Compute cosine distance between two vectors."""
     denom = max(vector_l2_norm(a) * vector_l2_norm(b), 1e-12)
     cosine_sim = vector_dot(a, b) / denom
     return 1.0 - cosine_sim
 
 
-def argmin_index(values: np.ndarray) -> int:
+def argmin_index(values: Any) -> int:
     """Return the index of the smallest value in a non-empty 1D array."""
-    if values.ndim != 1:
-        raise ValueError("argmin_index expects a 1D array")
-    if values.shape[0] == 0:
+    vector = _to_vector(values, "argmin_index")
+    if len(vector) == 0:
         raise ValueError("argmin_index expects a non-empty array")
     best_idx = 0
-    best_value = float(values[0])
-    for idx in range(1, values.shape[0]):
-        current = float(values[idx])
+    best_value = vector[0]
+    for idx in range(1, len(vector)):
+        current = vector[idx]
         if current < best_value:
             best_value = current
             best_idx = idx
     return best_idx
 
 
-def scale_vector(vector: np.ndarray, scalar: float) -> np.ndarray:
+def scale_vector(vector: Any, scalar: float) -> list[float]:
     """Return a scaled copy of a 1D vector."""
-    if vector.ndim != 1:
-        raise ValueError("scale_vector expects a 1D vector")
-    result = np.zeros(vector.shape[0], dtype=np.float64)
-    for idx in range(vector.shape[0]):
-        result[idx] = float(vector[idx]) * scalar
-    return result
+    data = _to_vector(vector, "scale_vector")
+    return [value * scalar for value in data]
 
 
-def column_means(matrix: np.ndarray) -> np.ndarray:
+def column_means(matrix: Any) -> list[float]:
     """Compute mean value for each column in a 2D matrix."""
-    if matrix.ndim != 2:
-        raise ValueError("column_means expects a 2D matrix")
-    n_rows, n_cols = matrix.shape
-    means = np.zeros(n_cols, dtype=np.float64)
+    data = _to_matrix(matrix, "column_means")
+    n_rows = len(data)
+    n_cols = len(data[0])
+    means = [0.0 for _ in range(n_cols)]
     for col in range(n_cols):
         total = 0.0
         for row in range(n_rows):
-            total += float(matrix[row, col])
+            total += data[row][col]
         means[col] = total / n_rows
     return means
 
 
-def center_matrix(matrix: np.ndarray, means: np.ndarray) -> np.ndarray:
+def center_matrix(matrix: Any, means: Any) -> list[list[float]]:
     """Center each row of a matrix by subtracting column means."""
-    if matrix.ndim != 2:
-        raise ValueError("center_matrix expects a 2D matrix")
-    if means.ndim != 1:
-        raise ValueError("center_matrix expects a 1D means vector")
-    n_rows, n_cols = matrix.shape
-    if means.shape[0] != n_cols:
+    data = _to_matrix(matrix, "center_matrix")
+    mean_vector = _to_vector(means, "center_matrix")
+    n_rows = len(data)
+    n_cols = len(data[0])
+    if len(mean_vector) != n_cols:
         raise ValueError("means length must match matrix column count")
-
-    centered = np.zeros((n_rows, n_cols), dtype=np.float64)
+    centered: list[list[float]] = []
     for row in range(n_rows):
+        centered_row = [0.0 for _ in range(n_cols)]
         for col in range(n_cols):
-            centered[row, col] = float(matrix[row, col]) - float(means[col])
+            centered_row[col] = data[row][col] - mean_vector[col]
+        centered.append(centered_row)
     return centered
 
 
-def covariance_matrix(centered: np.ndarray, denominator: int) -> np.ndarray:
+def covariance_matrix(centered: Any, denominator: int) -> list[list[float]]:
     """Compute covariance matrix from centered samples."""
-    if centered.ndim != 2:
-        raise ValueError("covariance_matrix expects a 2D matrix")
+    data = _to_matrix(centered, "covariance_matrix")
     if denominator <= 0:
         raise ValueError("denominator must be positive")
-    n_rows, n_cols = centered.shape
-    cov = np.zeros((n_cols, n_cols), dtype=np.float64)
+    n_rows = len(data)
+    n_cols = len(data[0])
+    cov = [[0.0 for _ in range(n_cols)] for _ in range(n_cols)]
     for i in range(n_cols):
         for j in range(i, n_cols):
             total = 0.0
             for row in range(n_rows):
-                total += float(centered[row, i]) * float(centered[row, j])
+                total += data[row][i] * data[row][j]
             value = total / denominator
-            cov[i, j] = value
-            cov[j, i] = value
+            cov[i][j] = value
+            cov[j][i] = value
     return cov
 
 
-def matrix_vector_multiply(matrix: np.ndarray, vector: np.ndarray) -> np.ndarray:
+def matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
     """Multiply a 2D matrix by a 1D vector."""
-    if matrix.ndim != 2:
-        raise ValueError("matrix_vector_multiply expects a 2D matrix")
-    if vector.ndim != 1:
-        raise ValueError("matrix_vector_multiply expects a 1D vector")
-    n_rows, n_cols = matrix.shape
-    if n_cols != vector.shape[0]:
+    data = _to_matrix(matrix, "matrix_vector_multiply")
+    vector_data = _to_vector(vector, "matrix_vector_multiply")
+    n_rows = len(data)
+    n_cols = len(data[0])
+    if n_cols != len(vector_data):
         raise ValueError("matrix column count must match vector length")
-
-    result = np.zeros(n_rows, dtype=np.float64)
+    result = [0.0 for _ in range(n_rows)]
     for row in range(n_rows):
         total = 0.0
         for col in range(n_cols):
-            total += float(matrix[row, col]) * float(vector[col])
+            total += data[row][col] * vector_data[col]
         result[row] = total
     return result
 
 
 def power_iteration_symmetric(
-    matrix: np.ndarray,
-    init_vector: np.ndarray,
+    matrix: Any,
+    init_vector: Any,
     max_iter: int = 500,
     tol: float = 1e-10,
-) -> tuple[float, np.ndarray]:
+) -> tuple[float, list[float]]:
     """Approximate dominant eigenpair of a symmetric matrix."""
-    if matrix.ndim != 2:
-        raise ValueError("power_iteration_symmetric expects a 2D matrix")
-    if matrix.shape[0] != matrix.shape[1]:
+    data = _to_matrix(matrix, "power_iteration_symmetric")
+    size = len(data)
+    if any(len(row) != size for row in data):
         raise ValueError("power_iteration_symmetric expects a square matrix")
-    if init_vector.ndim != 1:
-        raise ValueError("init_vector must be 1D")
-    if init_vector.shape[0] != matrix.shape[0]:
+    vector = _to_vector(init_vector, "init_vector")
+    if len(vector) != size:
         raise ValueError("init_vector length must match matrix size")
 
-    vector = np.array(init_vector, dtype=np.float64)
     norm = vector_l2_norm(vector)
     if norm < 1e-12:
-        vector = np.ones(matrix.shape[0], dtype=np.float64)
+        vector = [1.0 for _ in range(size)]
         norm = vector_l2_norm(vector)
     vector = scale_vector(vector, 1.0 / norm)
 
     for _ in range(max_iter):
-        multiplied = matrix_vector_multiply(matrix, vector)
+        multiplied = matrix_vector_multiply(data, vector)
         multiplied_norm = vector_l2_norm(multiplied)
         if multiplied_norm < 1e-12:
             break
@@ -173,48 +205,49 @@ def power_iteration_symmetric(
         if delta < tol:
             break
 
-    rayleigh_num = vector_dot(vector, matrix_vector_multiply(matrix, vector))
+    rayleigh_num = vector_dot(vector, matrix_vector_multiply(data, vector))
     rayleigh_den = max(vector_dot(vector, vector), 1e-12)
     eigenvalue = rayleigh_num / rayleigh_den
     return eigenvalue, vector
 
 
-def deflate_symmetric(
-    matrix: np.ndarray, eigenvalue: float, eigenvector: np.ndarray
-) -> np.ndarray:
+def deflate_symmetric(matrix: Any, eigenvalue: float, eigenvector: Any) -> list[list[float]]:
     """Deflate symmetric matrix by one eigenpair."""
-    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+    data = _to_matrix(matrix, "deflate_symmetric")
+    size = len(data)
+    if any(len(row) != size for row in data):
         raise ValueError("deflate_symmetric expects a square matrix")
-    if eigenvector.ndim != 1 or eigenvector.shape[0] != matrix.shape[0]:
+    vector = _to_vector(eigenvector, "eigenvector")
+    if len(vector) != size:
         raise ValueError("eigenvector length must match matrix size")
 
-    result = np.array(matrix, dtype=np.float64, copy=True)
-    size = matrix.shape[0]
+    result = [row[:] for row in data]
     for i in range(size):
         for j in range(size):
-            result[i, j] -= eigenvalue * float(eigenvector[i]) * float(eigenvector[j])
+            result[i][j] -= eigenvalue * vector[i] * vector[j]
     return result
 
 
 def top_k_eigenpairs_symmetric(
-    matrix: np.ndarray,
+    matrix: Any,
     k: int,
     max_iter: int = 500,
     tol: float = 1e-10,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[list[float], list[list[float]]]:
     """Compute top-k eigenpairs of a symmetric matrix by power iteration + deflation."""
-    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+    data = _to_matrix(matrix, "top_k_eigenpairs_symmetric")
+    size = len(data)
+    if any(len(row) != size for row in data):
         raise ValueError("top_k_eigenpairs_symmetric expects a square matrix")
-    size = matrix.shape[0]
     if k < 1 or k > size:
         raise ValueError(f"k must be in [1, {size}]")
 
-    working = np.array(matrix, dtype=np.float64, copy=True)
-    eigenvalues = np.zeros(k, dtype=np.float64)
-    eigenvectors = np.zeros((k, size), dtype=np.float64)
+    working = [row[:] for row in data]
+    eigenvalues = [0.0 for _ in range(k)]
+    eigenvectors: list[list[float]] = []
 
     for idx in range(k):
-        init = np.ones(size, dtype=np.float64)
+        init = [1.0 for _ in range(size)]
         init[idx % size] = 2.0
         value, vector = power_iteration_symmetric(
             working, init_vector=init, max_iter=max_iter, tol=tol
@@ -222,7 +255,7 @@ def top_k_eigenpairs_symmetric(
         if value < 0.0 and abs(value) < 1e-10:
             value = 0.0
         eigenvalues[idx] = value
-        eigenvectors[idx] = vector
+        eigenvectors.append(vector)
         working = deflate_symmetric(working, value, vector)
 
     return eigenvalues, eigenvectors

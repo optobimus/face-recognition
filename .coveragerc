@@ -1,5 +1,6 @@
 [run]
-source = src
+source_pkgs = facerec
 omit =
+    src/integration/**
     src/tests/**
     src/**/__init__.py
