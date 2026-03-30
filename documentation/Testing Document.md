@@ -3,11 +3,12 @@
 ## 1. Scope of Testing
 
 This project is tested with automated unit tests using `unittest` test classes and `pytest` as the test runner.  
-The tests currently focus on the implemented core areas:
+The tests focus on the implemented core areas:
 
 - dataset discovery and train/test splitting
 - image preprocessing
-- PCA fitting and projection
+- custom matrix operations
+- PCA fitting and projection with custom matrix operations
 - nearest-neighbor classification
 - pipeline training and prediction flow
 - CLI commands (`train`, `predict`, `evaluate`)
@@ -35,16 +36,21 @@ Name                        Stmts   Miss Branch BrPart  Cover   Missing
 src/facerec/cli.py             84      1      6      1    98%   138
 src/facerec/data.py            43      0     24      0   100%
 src/facerec/eval.py            26      0      8      0   100%
-src/facerec/knn.py             33      0     16      0   100%
+src/facerec/knn.py             29      0     16      0   100%
+src/facerec/matrix_ops.py     194      8     90      8    94%   15, 26, 29, 36, 41, 45, 219, 241
 src/facerec/model_io.py        22      0      2      0   100%
-src/facerec/pca.py             31      0     10      0   100%
+src/facerec/pca.py             43      0     16      0   100%
 src/facerec/pipeline.py        29      0      8      0   100%
 src/facerec/preprocess.py      18      0      4      0   100%
 -----------------------------------------------------------------------
-TOTAL                         286      1     78      1    99%
+TOTAL                         488      9    174      9    97%
 ```
 
-At this stage, algorithm modules are fully covered by the current branch-report run, and the only uncovered line is the direct `__main__` execution path in the CLI module.
+Most modules are at 100% branch coverage in this unit-test run.  
+The remaining uncovered branches are in:
+
+- direct `__main__` execution path in `cli.py`
+- defensive/input-validation branches in `matrix_ops.py`
 
 ## 3. What Was Tested and How
 
@@ -68,6 +74,15 @@ At this stage, algorithm modules are fully covered by the current branch-report 
 - invalid component count handling
 - feature dimension mismatch handling
 - deterministic projection behavior
+- custom covariance/eigenpair path behavior (through `fit_pca` and `transform_pca`)
+
+### `matrix_ops.py`
+
+- vector operations (`dot`, norm, scaling, distances, `argmin`)
+- matrix operations (column means, centering, covariance, matrix-vector multiplication)
+- eigenpair computation by power iteration + deflation
+- top-k eigenpair extraction and edge-case behavior
+- invalid input shape/type handling for all major operations
 
 ### `knn.py`
 
@@ -108,6 +123,7 @@ Current tests use representative synthetic inputs:
 - temporary ORL-like folder structures with multiple identity folders
 - generated grayscale image files (`.pgm`) with clearly separated intensity distributions
 - numeric matrices with cluster-like structure for PCA and KNN validation
+- numeric matrices/vectors for matrix operation correctness and edge-case validation
 - valid and invalid input shapes for branch/error testing
 - deterministic random seeds for reproducibility
 - path-level negative cases (missing files, wrong path types)
@@ -159,7 +175,7 @@ Performance benchmarking and larger-scale robustness tests are not yet implement
 
 Current automated test count:
 
-- 47 tests passing (`python3 -m pytest src`)
+- 70 tests passing (`python3 -m pytest src`)
 - integration CLI flow test passing (`python3 -m integration.cli_flow_test`)
 
 Planned additions:
@@ -171,6 +187,7 @@ Planned additions:
 ## 7. Current Limitations
 
 - The direct `__main__` line in the CLI module is not executed during tests.
+- Some defensive branches in `matrix_ops.py` are still uncovered.
 - Current integration coverage is still based on small synthetic datasets for fast feedback.
 - Large-scale and performance-oriented tests are still pending.
 
