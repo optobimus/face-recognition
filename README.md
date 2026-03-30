@@ -26,3 +26,9 @@ Run linting:
 ```bash
 python3 -m pylint src/facerec
 ```
+
+Run integration test (CLI end-to-end flow):
+
+```bash
+python3 -m integration.cli_flow_test
+```
