@@ -6,22 +6,21 @@ from typing import Literal
 
 import numpy as np
 
+from facerec.matrix_ops import argmin_index, cosine_distance, euclidean_distance
+
 MetricName = Literal["euclidean", "cosine"]
 
 
 def euclidean_distances(query: np.ndarray, gallery: np.ndarray) -> np.ndarray:
     """Compute Euclidean distances from query to each gallery vector."""
-    diff = gallery - query
-    return np.linalg.norm(diff, axis=1)
+    values = [euclidean_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
+    return np.array(values, dtype=np.float64)
 
 
 def cosine_distances(query: np.ndarray, gallery: np.ndarray) -> np.ndarray:
     """Compute cosine distances from query to each gallery vector."""
-    query_norm = np.linalg.norm(query)
-    gallery_norms = np.linalg.norm(gallery, axis=1)
-    denom = np.maximum(query_norm * gallery_norms, 1e-12)
-    cosine_sim = (gallery @ query) / denom
-    return 1.0 - cosine_sim
+    values = [cosine_distance(query, gallery[idx]) for idx in range(gallery.shape[0])]
+    return np.array(values, dtype=np.float64)
 
 
 def predict_nearest_neighbor(
@@ -51,5 +50,5 @@ def predict_nearest_neighbor(
     else:
         raise ValueError(f"Unsupported metric: {metric}")
 
-    best_index = int(np.argmin(distances))
+    best_index = argmin_index(distances)
     return str(labels[best_index]), float(distances[best_index]), best_index
