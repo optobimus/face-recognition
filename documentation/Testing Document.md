@@ -12,6 +12,7 @@ The tests currently focus on the implemented core areas:
 - pipeline training and prediction flow
 - CLI commands (`train`, `predict`, `evaluate`)
 - evaluation metrics and confusion matrix generation
+- an end-to-end CLI integration flow (`train -> predict -> evaluate`)
 
 The testing goal is to verify both algorithm correctness and expected runtime behavior of the current command-line workflow.
 
@@ -93,6 +94,13 @@ At this stage, algorithm modules are fully covered by the current branch-report 
 - correctness of total/correct/accuracy values
 - empty-input and length-mismatch validation behavior
 
+### Integration test (`src/integration/cli_flow_test.py`)
+
+- creates a temporary ORL-style dataset with two identities
+- runs CLI commands via subprocess (`train`, `predict`, `evaluate`)
+- verifies model file generation, prediction output fields, and evaluation report content
+- validates full command-chain behavior outside direct function-level unit tests
+
 ## 4. Types of Inputs Used
 
 Current tests use representative synthetic inputs:
@@ -103,6 +111,7 @@ Current tests use representative synthetic inputs:
 - valid and invalid input shapes for branch/error testing
 - deterministic random seeds for reproducibility
 - path-level negative cases (missing files, wrong path types)
+- subprocess-level CLI invocation with temporary datasets and artifacts
 
 These inputs were selected to exercise both normal execution and failure branches.
 
@@ -118,6 +127,12 @@ Run unit tests:
 
 ```bash
 python3 -m pytest src
+```
+
+Run integration flow test:
+
+```bash
+python3 -m integration.cli_flow_test
 ```
 
 Run branch coverage:
@@ -145,17 +160,18 @@ Performance benchmarking and larger-scale robustness tests are not yet implement
 Current automated test count:
 
 - 47 tests passing (`python3 -m pytest src`)
+- integration CLI flow test passing (`python3 -m integration.cli_flow_test`)
 
 Planned additions:
 
-- dedicated integration tests over larger subsets of the face dataset
+- additional integration scenarios over larger subsets of the face dataset
 - selected invariant-style checks for preprocessing and embedding behavior
 - simple timing comparisons between selected parameter settings (for example different PCA component counts)
 
 ## 7. Current Limitations
 
 - The direct `__main__` line in the CLI module is not executed during tests.
-- Testing currently uses small synthetic datasets for fast feedback.
+- Current integration coverage is still based on small synthetic datasets for fast feedback.
 - Large-scale and performance-oriented tests are still pending.
 
 These limitations are planned to be addressed in subsequent batches while keeping quick unit-test feedback for daily development.
