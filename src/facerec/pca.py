@@ -3,8 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import numpy as np
+
+from facerec.matrix_ops import (
+    center_matrix,
+    column_means,
+    covariance_matrix,
+    top_k_eigenpairs_symmetric,
+    vector_dot,
+)
 
 
 @dataclass(frozen=True)
@@ -16,7 +25,7 @@ class PCAState:
 
 
 def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
-    """Fit PCA with SVD and return the fitted state"""
+    """Fit PCA with covariance eigendecomposition and return the fitted state."""
     if x.ndim != 2:
         raise ValueError("x must be a 2D array with shape (n_samples, n_features)")
     n_samples, n_features = x.shape
@@ -28,17 +37,21 @@ def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
             f"n_components must be in [1, {max_components}], got {n_components}"
         )
 
-    mean = x.mean(axis=0, dtype=np.float64)
-    centered = x - mean
-    _, singular_values, vt = np.linalg.svd(centered, full_matrices=False)
-    components = vt[:n_components]
-    explained_variance = (singular_values**2) / (n_samples - 1)
+    mean = column_means(x)
+    centered = center_matrix(x, mean)
+    cov = covariance_matrix(centered, denominator=n_samples - 1)
+    explained_variance, components = top_k_eigenpairs_symmetric(cov, n_components)
+
+    singular_values = np.zeros(n_components, dtype=np.float64)
+    for idx in range(n_components):
+        eig = max(float(explained_variance[idx]), 0.0)
+        singular_values[idx] = math.sqrt(eig * (n_samples - 1))
 
     return PCAState(
         mean=mean,
         components=components,
-        singular_values=singular_values[:n_components],
-        explained_variance=explained_variance[:n_components],
+        singular_values=singular_values,
+        explained_variance=explained_variance,
     )
 
 
@@ -50,5 +63,13 @@ def transform_pca(x: np.ndarray, state: PCAState) -> np.ndarray:
         raise ValueError(
             "x has incompatible feature dimension for the provided PCA state"
         )
-    centered = x - state.mean
-    return centered @ state.components.T
+    centered = center_matrix(x, state.mean)
+    n_samples = centered.shape[0]
+    n_components = state.components.shape[0]
+    projected = np.zeros((n_samples, n_components), dtype=np.float64)
+    for row in range(n_samples):
+        for comp_idx in range(n_components):
+            projected[row, comp_idx] = vector_dot(
+                centered[row], state.components[comp_idx]
+            )
+    return projected
