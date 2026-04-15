@@ -82,7 +82,7 @@ The main algorithm will be PCA, used to find a low-dimensional subspace that cap
 
 PCA is a good fit because raw face images may contain thousands of pixel values, making direct comparison noisy and inefficient. By projecting each face into a smaller subspace, the system can retain the strongest structure in the data while removing redundancy.
 
-The implementation will use matrix-based PCA through eigendecomposition or, preferably, **Singular Value Decomposition (SVD)** on the centered data matrix.
+The implementation uses matrix-based PCA through covariance construction and custom eigendecomposition steps (power iteration with deflation) implemented with explicit matrix/vector operations.
 
 **Data structures:**
 
@@ -108,11 +108,10 @@ This stage decides which known face is closest to the query in the PCA space.
 - label array
 - optionally a k-d tree for indexing low-dimensional embeddings
 
-### 4. Optional comparison method: LBPH
+### 4. Optional future extension: LBPH
 
-An excellent comparison method is **Local Binary Patterns Histograms (LBPH)**. Unlike PCA, LBPH uses local texture patterns rather than a global linear subspace. This makes it a useful baseline because it behaves differently under lighting and local appearance changes.
-
-Comparing PCA-based recognition against LBPH would strengthen the project, because it turns the work from "build one recognizer" into "design and evaluate two different recognition strategies." Tihs would certainly make the project more robust. Keeping it as a secondary option for now.
+An optional future extension is **Local Binary Patterns Histograms (LBPH)** as a comparison baseline.  
+The current implemented scope focuses on PCA/Eigenfaces + nearest-neighbor, and LBPH is intentionally kept outside the core implementation for now.
 
 ### 5. Evaluation
 
@@ -152,7 +151,6 @@ Let:
 - `m` = number of query or test images
 - `d` = number of pixels per image after preprocessing
 - `k` = number of retained principal components
-- `b` = number of histogram bins in LBPH
 
 ### Preprocessing
 
@@ -165,17 +163,18 @@ This is linear because every pixel must be read and transformed at least once.
 
 ### PCA training
 
-The centered data matrix has size `n x d`. A practical implementation uses SVD instead of forming a huge full covariance matrix when `d` is large.
+The centered data matrix has size `n x d`. The implemented approach explicitly constructs a covariance matrix and extracts top eigenpairs with iterative methods.
 
-For face datasets, it is common that `d >> n`, in which case economy-size SVD is roughly:
+For the current implementation:
 
-- **Time:** `O(n^2 d)`
-- **Space:** `O(nd)`
+- mean + centering: **Time** `O(nd)`, **Space** `O(nd)`
+- covariance construction: **Time** `O(nd^2)`, **Space** `O(d^2)`
+- top-`k` eigenpairs with power iteration + deflation: **Time** `O(k * t * d^2 + k * d^2)`, where `t` is iteration count
 
-If one instead forms and diagonalizes a full `d x d` covariance matrix directly, the cost can become much worse, up to:
+So a practical combined estimate is:
 
-- **Time:** `O(d^3)`
-- **Space:** `O(d^2)`
+- **Time:** `O(nd^2 + ktd^2)`
+- **Space:** `O(nd + d^2)`
 
 The reason PCA is expensive is that it must process the entire training matrix and compute dominant directions of variation in a high-dimensional vector space.
 
@@ -206,15 +205,9 @@ If embeddings are indexed in a k-d tree:
 
 However, k-d trees are less effective in higher-dimensional spaces. Since face embeddings may still have dozens of dimensions, this optimization is optional rather than guaranteed to help.
 
-### LBPH feature extraction and matching
+### Optional LBPH extension (future work)
 
-With fixed local neighborhoods, local binary pattern extraction is linear in the number of pixels.
-
-- **Feature extraction time:** `O(d)` per image
-- **Feature storage:** `O(b)` per image histogram, or `O(nb)` for the full gallery
-- **Brute-force matching:** `O(nb)` per query if the query histogram is compared to all stored histograms
-
-This is efficient because each pixel contributes to a constant-size local code and comparison is then done between histograms.
+If LBPH is added later as a baseline, feature extraction would be approximately linear in pixel count (`O(d)` per image), and brute-force matching would be linear in gallery size.
 
 ### Full test pass
 
@@ -242,7 +235,7 @@ The project aims to deliver:
 
 - a working training and recognition pipeline for labeled face images
 - at least one implemented recognition method based on PCA/Eigenfaces
-- one comparison baseline, ideally LBPH or a simpler raw-pixel nearest-neighbor baseline
+- evaluation and analysis for the implemented PCA/Eigenfaces pipeline
 - evaluation scripts and result summaries
 - documentation describing the algorithms, design choices, and limitations
 
