@@ -11,6 +11,7 @@ from facerec.matrix_ops import (
     deflate_symmetric,
     euclidean_distance,
     matrix_vector_multiply,
+    orthogonalize_vector,
     power_iteration_symmetric,
     scale_vector,
     top_k_eigenpairs_symmetric,
@@ -70,12 +71,36 @@ class TestMatrixOps(unittest.TestCase):
         result = matrix_vector_multiply(matrix, vector)
         self.assertTrue(np.array_equal(result, np.array([17.0, 39.0])))
 
+    def test_orthogonalize_vector_removes_projection(self):
+        vector = np.array([1.0, 1.0], dtype=np.float64)
+        basis = np.array([[1.0, 0.0]], dtype=np.float64)
+        result = orthogonalize_vector(vector, basis)
+        self.assertAlmostEqual(result[0], 0.0, places=6)
+        self.assertAlmostEqual(result[1], 1.0, places=6)
+
+    def test_orthogonalize_vector_raises_for_mismatched_basis(self):
+        vector = np.array([1.0, 1.0], dtype=np.float64)
+        basis = np.array([[1.0, 0.0, 0.0]], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            orthogonalize_vector(vector, basis)
+
     def test_power_iteration_symmetric(self):
         matrix = np.array([[4.0, 0.0], [0.0, 1.0]], dtype=np.float64)
         init = np.array([1.0, 1.0], dtype=np.float64)
         eigenvalue, eigenvector = power_iteration_symmetric(matrix, init)
         self.assertAlmostEqual(eigenvalue, 4.0, places=6)
         self.assertAlmostEqual(vector_l2_norm(eigenvector), 1.0, places=6)
+
+    def test_power_iteration_symmetric_respects_orthogonal_basis(self):
+        matrix = np.array([[4.0, 0.0], [0.0, 1.0]], dtype=np.float64)
+        init = np.array([1.0, 1.0], dtype=np.float64)
+        eigenvalue, eigenvector = power_iteration_symmetric(
+            matrix,
+            init,
+            orthogonal_basis=[[1.0, 0.0]],
+        )
+        self.assertAlmostEqual(eigenvalue, 1.0, places=6)
+        self.assertAlmostEqual(vector_dot(eigenvector, [1.0, 0.0]), 0.0, places=6)
 
     def test_top_k_eigenpairs_symmetric(self):
         matrix = np.array(
@@ -89,6 +114,11 @@ class TestMatrixOps(unittest.TestCase):
         sorted_values = sorted([float(v) for v in eigenvalues], reverse=True)
         self.assertAlmostEqual(sorted_values[0], 5.0, places=4)
         self.assertAlmostEqual(sorted_values[1], 3.0, places=4)
+        self.assertAlmostEqual(
+            vector_dot(eigenvectors[0], eigenvectors[1]),
+            0.0,
+            places=6,
+        )
 
     def test_vector_dot_raises_for_invalid_input(self):
         with self.assertRaises(ValueError):
@@ -147,6 +177,8 @@ class TestMatrixOps(unittest.TestCase):
             power_iteration_symmetric(square, np.array([[1.0, 1.0]]))
         with self.assertRaises(ValueError):
             power_iteration_symmetric(square, np.array([1.0]))
+        with self.assertRaises(ValueError):
+            power_iteration_symmetric(square, np.array([1.0, 1.0]), orthogonal_basis=[[1.0]])
 
     def test_power_iteration_handles_zero_matrix(self):
         matrix = np.zeros((2, 2), dtype=np.float64)
@@ -154,6 +186,16 @@ class TestMatrixOps(unittest.TestCase):
         eigenvalue, eigenvector = power_iteration_symmetric(matrix, init)
         self.assertAlmostEqual(eigenvalue, 0.0)
         self.assertAlmostEqual(vector_l2_norm(eigenvector), 1.0, places=6)
+
+    def test_power_iteration_raises_for_full_orthogonal_basis(self):
+        matrix = np.eye(2, dtype=np.float64)
+        init = np.array([1.0, 1.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            power_iteration_symmetric(
+                matrix,
+                init,
+                orthogonal_basis=[[1.0, 0.0], [0.0, 1.0]],
+            )
 
     def test_power_iteration_with_zero_iterations(self):
         matrix = np.array([[2.0, 0.0], [0.0, 1.0]], dtype=np.float64)

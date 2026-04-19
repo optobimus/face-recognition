@@ -106,6 +106,74 @@ def scale_vector(vector: Any, scalar: float) -> list[float]:
     return [value * scalar for value in data]
 
 
+def orthogonalize_vector(vector: Any, basis: Any) -> list[float]:
+    """Orthogonalize a vector against a basis using Gram-Schmidt."""
+    result = _to_vector(vector, "orthogonalize_vector")
+    basis_vectors = _to_matrix(basis, "orthogonalize_vector")
+    if len(basis_vectors) == 0:
+        return result
+    if any(len(basis_vector) != len(result) for basis_vector in basis_vectors):
+        raise ValueError("basis vector length must match target vector length")
+
+    for basis_vector in basis_vectors:
+        basis_norm_sq = max(vector_dot(basis_vector, basis_vector), 1e-12)
+        projection_scale = vector_dot(result, basis_vector) / basis_norm_sq
+        for idx, value in enumerate(result):
+            result[idx] = value - projection_scale * basis_vector[idx]
+    return result
+
+
+def _optional_basis_vectors(values: Any | None, name: str) -> list[list[float]]:
+    if values is None:
+        return []
+    raw_rows = values.tolist() if hasattr(values, "tolist") else list(values)
+    if len(raw_rows) == 0:
+        return []
+    return _to_matrix(raw_rows, name)
+
+
+def _validated_orthogonal_basis(values: Any | None, size: int) -> list[list[float]]:
+    basis_vectors = _optional_basis_vectors(values, "orthogonal_basis")
+    if any(len(basis_vector) != size for basis_vector in basis_vectors):
+        raise ValueError("basis vector length must match matrix size")
+    return basis_vectors
+
+
+def _normalized_orthogonal_vector(
+    vector: Any,
+    basis_vectors: list[list[float]],
+) -> list[float]:
+    candidate = _to_vector(vector, "init_vector")
+    if basis_vectors:
+        candidate = orthogonalize_vector(candidate, basis_vectors)
+    norm = vector_l2_norm(candidate)
+    if norm >= 1e-12:
+        return scale_vector(candidate, 1.0 / norm)
+    for pivot_idx in range(len(candidate)):
+        unit_vector = [0.0 for _ in range(len(candidate))]
+        unit_vector[pivot_idx] = 1.0
+        if basis_vectors:
+            unit_vector = orthogonalize_vector(unit_vector, basis_vectors)
+        unit_norm = vector_l2_norm(unit_vector)
+        if unit_norm >= 1e-12:
+            return scale_vector(unit_vector, 1.0 / unit_norm)
+    raise ValueError("could not construct a non-zero vector orthogonal to the basis")
+
+
+def _power_iteration_step(
+    matrix: list[list[float]],
+    vector: list[float],
+    basis_vectors: list[list[float]],
+) -> list[float] | None:
+    multiplied = matrix_vector_multiply(matrix, vector)
+    if basis_vectors:
+        multiplied = orthogonalize_vector(multiplied, basis_vectors)
+    multiplied_norm = vector_l2_norm(multiplied)
+    if multiplied_norm < 1e-12:
+        return None
+    return scale_vector(multiplied, 1.0 / multiplied_norm)
+
+
 def column_means(matrix: Any) -> list[float]:
     """Compute mean value for each column in a 2D matrix."""
     data = _to_matrix(matrix, "column_means")
@@ -176,6 +244,7 @@ def matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
 def power_iteration_symmetric(
     matrix: Any,
     init_vector: Any,
+    orthogonal_basis: Any | None = None,
     max_iter: int = 500,
     tol: float = 1e-10,
 ) -> tuple[float, list[float]]:
@@ -184,22 +253,16 @@ def power_iteration_symmetric(
     size = len(data)
     if any(len(row) != size for row in data):
         raise ValueError("power_iteration_symmetric expects a square matrix")
-    vector = _to_vector(init_vector, "init_vector")
-    if len(vector) != size:
+    basis_vectors = _validated_orthogonal_basis(orthogonal_basis, size)
+    init_data = _to_vector(init_vector, "init_vector")
+    if len(init_data) != size:
         raise ValueError("init_vector length must match matrix size")
-
-    norm = vector_l2_norm(vector)
-    if norm < 1e-12:
-        vector = [1.0 for _ in range(size)]
-        norm = vector_l2_norm(vector)
-    vector = scale_vector(vector, 1.0 / norm)
+    vector = _normalized_orthogonal_vector(init_data, basis_vectors)
 
     for _ in range(max_iter):
-        multiplied = matrix_vector_multiply(data, vector)
-        multiplied_norm = vector_l2_norm(multiplied)
-        if multiplied_norm < 1e-12:
+        next_vector = _power_iteration_step(data, vector, basis_vectors)
+        if next_vector is None:
             break
-        next_vector = scale_vector(multiplied, 1.0 / multiplied_norm)
         delta = euclidean_distance(next_vector, vector)
         vector = next_vector
         if delta < tol:
@@ -250,7 +313,11 @@ def top_k_eigenpairs_symmetric(
         init = [1.0 for _ in range(size)]
         init[idx % size] = 2.0
         value, vector = power_iteration_symmetric(
-            working, init_vector=init, max_iter=max_iter, tol=tol
+            working,
+            init_vector=init,
+            orthogonal_basis=eigenvectors,
+            max_iter=max_iter,
+            tol=tol,
         )
         if value < 0.0 and abs(value) < 1e-10:
             value = 0.0
