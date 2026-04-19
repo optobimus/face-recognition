@@ -36,6 +36,7 @@ def train_model_from_vectors(
 
     pca_state = fit_pca(x, n_components=n_components)
     gallery_embeddings = transform_pca(x, pca_state)
+
     return EigenfaceModel(
         pca=pca_state,
         gallery_embeddings=gallery_embeddings,
@@ -56,6 +57,7 @@ def predict_from_vector(
     """Predict nearest label for one input vector."""
     if vector.ndim != 1:
         raise ValueError("vector must be a 1D array")
+
     embedded = embed_vectors(model, vector.reshape(1, -1))
     return predict_nearest_neighbor(
         embedded[0], model.gallery_embeddings, model.gallery_labels, metric=model.metric

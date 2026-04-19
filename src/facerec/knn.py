@@ -34,8 +34,10 @@ def predict_nearest_neighbor(
         raise ValueError("gallery must be a 2D array")
     if gallery.shape[0] == 0:
         raise ValueError("gallery must contain at least one sample")
+
     if gallery.shape[1] != query.shape[0]:
         raise ValueError("query and gallery feature dimensions must match")
+
     if labels.ndim != 1:
         raise ValueError("labels must be a 1D array")
     if labels.shape[0] != gallery.shape[0]:

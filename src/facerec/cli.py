@@ -45,6 +45,7 @@ def _train_command(args: argparse.Namespace) -> int:
         metric=args.metric,
         image_size=image_size,
     )
+
     save_model(model, model_out)
     print(
         f"trained_samples={x_train.shape[0]} components={args.n_components} model={model_out}"
@@ -56,6 +57,7 @@ def _predict_command(args: argparse.Namespace) -> int:
     model = load_model(Path(args.model))
     vector = preprocess_image(Path(args.image), image_size=model.image_size)
     label, distance, _ = predict_from_vector(model, vector)
+
     print(f"label={label} distance={distance:.6f}")
     return 0
 
@@ -87,6 +89,7 @@ def _evaluate_command(args: argparse.Namespace) -> int:
         "accuracy": summary.accuracy,
         "confusion_matrix": summary.confusion_matrix,
     }
+
     report_out.parent.mkdir(parents=True, exist_ok=True)
     report_out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(
@@ -131,6 +134,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
     return int(args.handler(args))
 
 

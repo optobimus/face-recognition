@@ -13,6 +13,7 @@ def _is_iterable_value(value: Any) -> bool:
 def _to_vector(values: Any, name: str) -> list[float]:
     if not _is_iterable_value(values):
         raise ValueError(f"{name} expects 1D vectors")
+
     raw = values.tolist() if hasattr(values, "tolist") else list(values)
     if len(raw) == 0:
         return []
@@ -24,21 +25,25 @@ def _to_vector(values: Any, name: str) -> list[float]:
 def _to_matrix(values: Any, name: str) -> list[list[float]]:
     if not _is_iterable_value(values):
         raise ValueError(f"{name} expects a 2D matrix")
+
     raw_rows = values.tolist() if hasattr(values, "tolist") else list(values)
     if len(raw_rows) == 0:
         raise ValueError(f"{name} expects a 2D matrix")
     if not _is_iterable_value(raw_rows[0]):
         raise ValueError(f"{name} expects a 2D matrix")
+
     matrix: list[list[float]] = []
     expected_len: int | None = None
     for raw_row in raw_rows:
         if not _is_iterable_value(raw_row):
             raise ValueError(f"{name} expects a 2D matrix")
+
         row = raw_row.tolist() if hasattr(raw_row, "tolist") else list(raw_row)
         if expected_len is None:
             expected_len = len(row)
         elif expected_len != len(row):
             raise ValueError("matrix rows must have equal length")
+
         converted_row: list[float] = []
         for item in row:
             if _is_iterable_value(item):
@@ -52,8 +57,10 @@ def vector_dot(a: Any, b: Any) -> float:
     """Compute dot product of two equal-length vectors."""
     vector_a = _to_vector(a, "vector_dot")
     vector_b = _to_vector(b, "vector_dot")
+
     if len(vector_a) != len(vector_b):
         raise ValueError("vector_dot expects equal-length vectors")
+
     total = 0.0
     for value_a, value_b in zip(vector_a, vector_b):
         total += value_a * value_b
@@ -69,8 +76,10 @@ def euclidean_distance(a: Any, b: Any) -> float:
     """Compute Euclidean distance between two equal-length vectors."""
     vector_a = _to_vector(a, "euclidean_distance")
     vector_b = _to_vector(b, "euclidean_distance")
+
     if len(vector_a) != len(vector_b):
         raise ValueError("euclidean_distance expects equal-length vectors")
+
     squared_sum = 0.0
     for value_a, value_b in zip(vector_a, vector_b):
         diff = value_a - value_b
@@ -88,8 +97,10 @@ def cosine_distance(a: Any, b: Any) -> float:
 def argmin_index(values: Any) -> int:
     """Return the index of the smallest value in a non-empty 1D array."""
     vector = _to_vector(values, "argmin_index")
+
     if len(vector) == 0:
         raise ValueError("argmin_index expects a non-empty array")
+
     best_idx = 0
     best_value = vector[0]
     for idx in range(1, len(vector)):
@@ -110,6 +121,7 @@ def orthogonalize_vector(vector: Any, basis: Any) -> list[float]:
     """Orthogonalize a vector against a basis using Gram-Schmidt."""
     result = _to_vector(vector, "orthogonalize_vector")
     basis_vectors = _to_matrix(basis, "orthogonalize_vector")
+
     if len(basis_vectors) == 0:
         return result
     if any(len(basis_vector) != len(result) for basis_vector in basis_vectors):
@@ -126,9 +138,11 @@ def orthogonalize_vector(vector: Any, basis: Any) -> list[float]:
 def _optional_basis_vectors(values: Any | None, name: str) -> list[list[float]]:
     if values is None:
         return []
+
     raw_rows = values.tolist() if hasattr(values, "tolist") else list(values)
     if len(raw_rows) == 0:
         return []
+
     return _to_matrix(raw_rows, name)
 
 
@@ -144,19 +158,25 @@ def _normalized_orthogonal_vector(
     basis_vectors: list[list[float]],
 ) -> list[float]:
     candidate = _to_vector(vector, "init_vector")
+
     if basis_vectors:
         candidate = orthogonalize_vector(candidate, basis_vectors)
+
     norm = vector_l2_norm(candidate)
     if norm >= 1e-12:
         return scale_vector(candidate, 1.0 / norm)
+
     for pivot_idx in range(len(candidate)):
         unit_vector = [0.0 for _ in range(len(candidate))]
         unit_vector[pivot_idx] = 1.0
+
         if basis_vectors:
             unit_vector = orthogonalize_vector(unit_vector, basis_vectors)
+
         unit_norm = vector_l2_norm(unit_vector)
         if unit_norm >= 1e-12:
             return scale_vector(unit_vector, 1.0 / unit_norm)
+
     raise ValueError("could not construct a non-zero vector orthogonal to the basis")
 
 
@@ -166,11 +186,14 @@ def _power_iteration_step(
     basis_vectors: list[list[float]],
 ) -> list[float] | None:
     multiplied = matrix_vector_multiply(matrix, vector)
+
     if basis_vectors:
         multiplied = orthogonalize_vector(multiplied, basis_vectors)
+
     multiplied_norm = vector_l2_norm(multiplied)
     if multiplied_norm < 1e-12:
         return None
+
     return scale_vector(multiplied, 1.0 / multiplied_norm)
 
 
@@ -179,6 +202,7 @@ def column_means(matrix: Any) -> list[float]:
     data = _to_matrix(matrix, "column_means")
     n_rows = len(data)
     n_cols = len(data[0])
+
     means = [0.0 for _ in range(n_cols)]
     for col in range(n_cols):
         total = 0.0
@@ -194,8 +218,10 @@ def center_matrix(matrix: Any, means: Any) -> list[list[float]]:
     mean_vector = _to_vector(means, "center_matrix")
     n_rows = len(data)
     n_cols = len(data[0])
+
     if len(mean_vector) != n_cols:
         raise ValueError("means length must match matrix column count")
+
     centered: list[list[float]] = []
     for row in range(n_rows):
         centered_row = [0.0 for _ in range(n_cols)]
@@ -208,8 +234,10 @@ def center_matrix(matrix: Any, means: Any) -> list[list[float]]:
 def covariance_matrix(centered: Any, denominator: int) -> list[list[float]]:
     """Compute covariance matrix from centered samples."""
     data = _to_matrix(centered, "covariance_matrix")
+
     if denominator <= 0:
         raise ValueError("denominator must be positive")
+
     n_rows = len(data)
     n_cols = len(data[0])
     cov = [[0.0 for _ in range(n_cols)] for _ in range(n_cols)]
@@ -230,8 +258,10 @@ def matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
     vector_data = _to_vector(vector, "matrix_vector_multiply")
     n_rows = len(data)
     n_cols = len(data[0])
+
     if n_cols != len(vector_data):
         raise ValueError("matrix column count must match vector length")
+
     result = [0.0 for _ in range(n_rows)]
     for row in range(n_rows):
         total = 0.0
@@ -251,18 +281,22 @@ def power_iteration_symmetric(
     """Approximate dominant eigenpair of a symmetric matrix."""
     data = _to_matrix(matrix, "power_iteration_symmetric")
     size = len(data)
+
     if any(len(row) != size for row in data):
         raise ValueError("power_iteration_symmetric expects a square matrix")
+
     basis_vectors = _validated_orthogonal_basis(orthogonal_basis, size)
     init_data = _to_vector(init_vector, "init_vector")
     if len(init_data) != size:
         raise ValueError("init_vector length must match matrix size")
+
     vector = _normalized_orthogonal_vector(init_data, basis_vectors)
 
     for _ in range(max_iter):
         next_vector = _power_iteration_step(data, vector, basis_vectors)
         if next_vector is None:
             break
+
         delta = euclidean_distance(next_vector, vector)
         vector = next_vector
         if delta < tol:
@@ -278,8 +312,10 @@ def deflate_symmetric(matrix: Any, eigenvalue: float, eigenvector: Any) -> list[
     """Deflate symmetric matrix by one eigenpair."""
     data = _to_matrix(matrix, "deflate_symmetric")
     size = len(data)
+
     if any(len(row) != size for row in data):
         raise ValueError("deflate_symmetric expects a square matrix")
+
     vector = _to_vector(eigenvector, "eigenvector")
     if len(vector) != size:
         raise ValueError("eigenvector length must match matrix size")
@@ -300,6 +336,7 @@ def top_k_eigenpairs_symmetric(
     """Compute top-k eigenpairs of a symmetric matrix by power iteration + deflation."""
     data = _to_matrix(matrix, "top_k_eigenpairs_symmetric")
     size = len(data)
+
     if any(len(row) != size for row in data):
         raise ValueError("top_k_eigenpairs_symmetric expects a square matrix")
     if k < 1 or k > size:
