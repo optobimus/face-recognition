@@ -33,17 +33,17 @@ Current report:
 ```text
 Name                        Stmts   Miss Branch BrPart  Cover   Missing
 -----------------------------------------------------------------------
-src/facerec/cli.py             84      1      6      1    98%   138
+src/facerec/cli.py             84      1      6      1    98%   142
 src/facerec/data.py            43      0     24      0   100%
 src/facerec/eval.py            26      0      8      0   100%
 src/facerec/knn.py             29      0     16      0   100%
-src/facerec/matrix_ops.py     194      8     90      8    94%   15, 26, 29, 36, 41, 45, 219, 241
+src/facerec/matrix_ops.py     238      9    116      9    95%   15, 27, 31, 39, 45, 50, 126, 317, 341
 src/facerec/model_io.py        22      0      2      0   100%
 src/facerec/pca.py             43      0     16      0   100%
 src/facerec/pipeline.py        29      0      8      0   100%
 src/facerec/preprocess.py      18      0      4      0   100%
 -----------------------------------------------------------------------
-TOTAL                         488      9    174      9    97%
+TOTAL                         532     10    200     10    97%
 ```
 
 Most modules are at 100% branch coverage in this unit-test run.  
@@ -80,7 +80,7 @@ The remaining uncovered branches are in:
 
 - vector operations (`dot`, norm, scaling, distances, `argmin`)
 - matrix operations (column means, centering, covariance, matrix-vector multiplication)
-- eigenpair computation by power iteration + deflation
+- eigenpair computation by power iteration + orthogonalization + deflation
 - top-k eigenpair extraction and edge-case behavior
 - invalid input shape/type handling for all major operations
 
@@ -175,7 +175,7 @@ Performance benchmarking and larger-scale robustness tests are not yet implement
 
 Current automated test count:
 
-- 70 tests passing (`python3 -m pytest src`)
+- 74 tests passing (`python3 -m pytest src`)
 - integration CLI flow test passing (`python3 -m integration.cli_flow_test`)
 
 Planned additions:

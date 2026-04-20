@@ -44,11 +44,11 @@ Reason: each pixel is read and transformed once.
 - Time:
   - mean + centering: `O(nd)`
   - covariance construction: `O(nd^2)`
-  - top-`k` eigenpairs by power iteration + deflation: `O(k * t * d^2 + k * d^2)`
+  - top-`k` eigenpairs by power iteration + orthogonalization + deflation: `O(k * t * d^2 + k * d^2)`
   - total: `O(nd^2 + ktd^2)` (dominant terms)
 - Space: `O(d^2 + nd)` (covariance matrix and centered data)
 
-Reason: covariance is explicitly constructed as a dense `d x d` matrix, and each power-iteration step uses dense matrix-vector multiplication.
+Reason: covariance is explicitly constructed as a dense `d x d` matrix, each power-iteration step uses dense matrix-vector multiplication, and newly found vectors are orthogonalized for better numerical stability.
 
 ### PCA projection (`transform_pca`)
 
@@ -84,6 +84,8 @@ No alternative indexing structure is implemented yet, because my current scope p
 
 For PCA, the current implementation prioritizes algorithm transparency and explicit matrix operations.  
 Compared to optimized library decompositions, this custom approach is typically slower on large dimensions, but it satisfies the project requirement to implement complex matrix operations manually.
+
+The current implementation also includes Gram-Schmidt-style orthogonalization between extracted eigenvectors to reduce numerical instability when using iterative eigenpair extraction.
 
 ## 4. Possible Shortcomings and Suggestions for Improvement
 

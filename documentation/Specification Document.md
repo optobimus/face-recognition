@@ -82,7 +82,7 @@ The main algorithm will be PCA, used to find a low-dimensional subspace that cap
 
 PCA is a good fit because raw face images may contain thousands of pixel values, making direct comparison noisy and inefficient. By projecting each face into a smaller subspace, the system can retain the strongest structure in the data while removing redundancy.
 
-The implementation uses matrix-based PCA through covariance construction and custom eigendecomposition steps (power iteration with deflation) implemented with explicit matrix/vector operations.
+The implementation uses matrix-based PCA through covariance construction and custom eigendecomposition steps (power iteration with orthogonalization and deflation) implemented with explicit matrix/vector operations.
 
 **Data structures:**
 
@@ -169,7 +169,7 @@ For the current implementation:
 
 - mean + centering: **Time** `O(nd)`, **Space** `O(nd)`
 - covariance construction: **Time** `O(nd^2)`, **Space** `O(d^2)`
-- top-`k` eigenpairs with power iteration + deflation: **Time** `O(k * t * d^2 + k * d^2)`, where `t` is iteration count
+- top-`k` eigenpairs with power iteration + orthogonalization + deflation: **Time** `O(k * t * d^2 + k * d^2)`, where `t` is iteration count
 
 So a practical combined estimate is:
 
