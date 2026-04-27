@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This program implements a classical face recognitionpipeline based on Eigenfaces (PCA) and nearest-neighbor classification.
+This program implements a classical face recognition pipeline based on Eigenfaces (PCA) and nearest-neighbor classification.
 
 The program supports three main tasks:
 
@@ -20,6 +20,8 @@ Install the project and development dependencies:
 ```bash
 python3 -m pip install -e '.[dev]'
 ```
+
+After installation, the program is available through the `facerec` command.
 
 All commands below should be run from the project root directory.
 
@@ -54,7 +56,7 @@ The folder name is used as the label for that identity.
 Train a model with the default settings:
 
 ```bash
-python3 -m facerec.cli train \
+facerec train \
   --dataset-root dataset \
   --model-out data/model.npz
 ```
@@ -71,7 +73,7 @@ Useful training parameters:
 Example:
 
 ```bash
-python3 -m facerec.cli train \
+facerec train \
   --dataset-root dataset \
   --model-out data/model.npz \
   --n-components 25 \
@@ -93,7 +95,7 @@ trained_samples=... components=... model=data/model.npz
 Use a trained model to predict the identity of one image:
 
 ```bash
-python3 -m facerec.cli predict \
+facerec predict \
   --model data/model.npz \
   --image dataset/person1/1.pgm
 ```
@@ -111,7 +113,7 @@ The smaller the distance, the closer the image is to the nearest stored training
 Evaluate the trained model on the test split of the dataset:
 
 ```bash
-python3 -m facerec.cli evaluate \
+facerec evaluate \
   --model data/model.npz \
   --dataset-root dataset \
   --report-out data/report.json \

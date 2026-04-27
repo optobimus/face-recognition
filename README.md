@@ -8,6 +8,12 @@ Install development dependencies:
 python3 -m pip install -e '.[dev]'
 ```
 
+Run the installed CLI:
+
+```bash
+facerec --help
+```
+
 Run tests:
 
 ```bash
