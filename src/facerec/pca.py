@@ -10,9 +10,12 @@ import numpy as np
 from facerec.matrix_ops import (
     center_matrix,
     column_means,
-    covariance_matrix,
+    sample_covariance_matrix,
+    scale_vector,
     top_k_eigenpairs_symmetric,
+    transpose_matrix_vector_multiply,
     vector_dot,
+    vector_l2_norm,
 )
 
 
@@ -33,7 +36,7 @@ def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
     if n_samples < 2:
         raise ValueError("At least 2 samples are required to fit PCA")
 
-    max_components = min(n_samples, n_features)
+    max_components = min(n_samples - 1, n_features)
     if n_components < 1 or n_components > max_components:
         raise ValueError(
             f"n_components must be in [1, {max_components}], got {n_components}"
@@ -41,13 +44,30 @@ def fit_pca(x: np.ndarray, n_components: int) -> PCAState:
 
     mean = column_means(x)
     centered = center_matrix(x, mean)
-    cov = covariance_matrix(centered, denominator=n_samples - 1)
-    explained_variance, components = top_k_eigenpairs_symmetric(cov, n_components)
+    sample_cov = sample_covariance_matrix(centered, denominator=n_samples - 1)
+    explained_variance, sample_eigenvectors = top_k_eigenpairs_symmetric(
+        sample_cov, n_components
+    )
 
     singular_values = [0.0 for _ in range(n_components)]
+    components = [[0.0 for _ in range(n_features)] for _ in range(n_components)]
     for idx in range(n_components):
         eig = max(float(explained_variance[idx]), 0.0)
         singular_values[idx] = math.sqrt(eig * (n_samples - 1))
+        raw_component = transpose_matrix_vector_multiply(
+            centered, sample_eigenvectors[idx]
+        )
+
+        if singular_values[idx] >= 1e-12:
+            component = scale_vector(raw_component, 1.0 / singular_values[idx])
+        else:
+            component = raw_component
+
+        component_norm = vector_l2_norm(component)
+        if component_norm >= 1e-12:
+            component = scale_vector(component, 1.0 / component_norm)
+
+        components[idx] = component
 
     return PCAState(
         mean=np.asarray(mean, dtype=np.float64),

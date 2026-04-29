@@ -252,6 +252,27 @@ def covariance_matrix(centered: Any, denominator: int) -> list[list[float]]:
     return cov
 
 
+def sample_covariance_matrix(centered: Any, denominator: int) -> list[list[float]]:
+    """Compute sample-space covariance matrix from centered samples."""
+    data = _to_matrix(centered, "sample_covariance_matrix")
+
+    if denominator <= 0:
+        raise ValueError("denominator must be positive")
+
+    n_rows = len(data)
+    n_cols = len(data[0])
+    cov = [[0.0 for _ in range(n_rows)] for _ in range(n_rows)]
+    for i in range(n_rows):
+        for j in range(i, n_rows):
+            total = 0.0
+            for col in range(n_cols):
+                total += data[i][col] * data[j][col]
+            value = total / denominator
+            cov[i][j] = value
+            cov[j][i] = value
+    return cov
+
+
 def matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
     """Multiply a 2D matrix by a 1D vector."""
     data = _to_matrix(matrix, "matrix_vector_multiply")
@@ -268,6 +289,25 @@ def matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
         for col in range(n_cols):
             total += data[row][col] * vector_data[col]
         result[row] = total
+    return result
+
+
+def transpose_matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
+    """Multiply a transposed 2D matrix by a 1D vector."""
+    data = _to_matrix(matrix, "transpose_matrix_vector_multiply")
+    vector_data = _to_vector(vector, "transpose_matrix_vector_multiply")
+    n_rows = len(data)
+    n_cols = len(data[0])
+
+    if n_rows != len(vector_data):
+        raise ValueError("matrix row count must match vector length")
+
+    result = [0.0 for _ in range(n_cols)]
+    for col in range(n_cols):
+        total = 0.0
+        for row in range(n_rows):
+            total += data[row][col] * vector_data[row]
+        result[col] = total
     return result
 
 

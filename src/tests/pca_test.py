@@ -35,6 +35,14 @@ class TestPCA(unittest.TestCase):
         with self.assertRaises(ValueError):
             fit_pca(self.X, n_components=5)
 
+    def test_fit_pca_raises_when_components_exceed_centered_rank(self):
+        x_two_samples = np.array(
+            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+            dtype=np.float64,
+        )
+        with self.assertRaises(ValueError):
+            fit_pca(x_two_samples, n_components=2)
+
     def test_fit_pca_raises_for_too_few_samples(self):
         X_single = np.array([[1.0, 2.0, 3.0]], dtype=np.float64)
         with self.assertRaises(ValueError):
@@ -51,6 +59,25 @@ class TestPCA(unittest.TestCase):
         a = transform_pca(self.X, state)
         b = transform_pca(self.X, state)
         self.assertTrue(np.array_equal(a, b))
+
+    def test_fit_pca_returns_unit_length_components(self):
+        state = fit_pca(self.X, n_components=2)
+        for component in state.components:
+            self.assertAlmostEqual(float(np.linalg.norm(component)), 1.0, places=6)
+
+    def test_fit_pca_handles_more_features_than_samples(self):
+        x_wide = np.array(
+            [
+                [2.0, 0.0, 1.0, 3.0, 1.0],
+                [0.0, 1.0, 3.0, 1.0, 2.0],
+                [1.0, 4.0, 2.0, 0.0, 5.0],
+            ],
+            dtype=np.float64,
+        )
+        state = fit_pca(x_wide, n_components=2)
+        projected = transform_pca(x_wide, state)
+        self.assertEqual(state.components.shape, (2, 5))
+        self.assertEqual(projected.shape, (3, 2))
 
     def test_fit_pca_raises_for_non_matrix_input(self):
         bad = np.array([1.0, 2.0, 3.0], dtype=np.float64)

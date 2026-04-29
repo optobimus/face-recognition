@@ -13,7 +13,9 @@ from facerec.matrix_ops import (
     matrix_vector_multiply,
     orthogonalize_vector,
     power_iteration_symmetric,
+    sample_covariance_matrix,
     scale_vector,
+    transpose_matrix_vector_multiply,
     top_k_eigenpairs_symmetric,
     vector_dot,
     vector_l2_norm,
@@ -65,11 +67,29 @@ class TestMatrixOps(unittest.TestCase):
         expected = np.array([[2.0, 2.0], [2.0, 2.0]], dtype=np.float64)
         self.assertTrue(np.array_equal(cov, expected))
 
+    def test_sample_covariance_matrix(self):
+        centered = np.array(
+            [[1.0, 2.0, 0.0], [0.0, 1.0, 1.0], [2.0, 0.0, 1.0]],
+            dtype=np.float64,
+        )
+        cov = sample_covariance_matrix(centered, denominator=2)
+        expected = np.array(
+            [[2.5, 1.0, 1.0], [1.0, 1.0, 0.5], [1.0, 0.5, 2.5]],
+            dtype=np.float64,
+        )
+        self.assertTrue(np.array_equal(cov, expected))
+
     def test_matrix_vector_multiply(self):
         matrix = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
         vector = np.array([5.0, 6.0], dtype=np.float64)
         result = matrix_vector_multiply(matrix, vector)
         self.assertTrue(np.array_equal(result, np.array([17.0, 39.0])))
+
+    def test_transpose_matrix_vector_multiply(self):
+        matrix = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=np.float64)
+        vector = np.array([7.0, 8.0, 9.0], dtype=np.float64)
+        result = transpose_matrix_vector_multiply(matrix, vector)
+        self.assertTrue(np.array_equal(result, np.array([76.0, 100.0])))
 
     def test_orthogonalize_vector_removes_projection(self):
         vector = np.array([1.0, 1.0], dtype=np.float64)
@@ -157,6 +177,13 @@ class TestMatrixOps(unittest.TestCase):
         with self.assertRaises(ValueError):
             covariance_matrix(centered, denominator=0)
 
+    def test_sample_covariance_matrix_raises_for_invalid_input(self):
+        centered = np.array([[1.0, 2.0]], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            sample_covariance_matrix(np.array([1.0, 2.0]), denominator=1)
+        with self.assertRaises(ValueError):
+            sample_covariance_matrix(centered, denominator=0)
+
     def test_matrix_vector_multiply_raises_for_invalid_input(self):
         matrix = np.array([[1.0, 2.0]], dtype=np.float64)
         vector = np.array([1.0, 2.0], dtype=np.float64)
@@ -166,6 +193,16 @@ class TestMatrixOps(unittest.TestCase):
             matrix_vector_multiply(matrix, np.array([[1.0, 2.0]]))
         with self.assertRaises(ValueError):
             matrix_vector_multiply(matrix, np.array([1.0]))
+
+    def test_transpose_matrix_vector_multiply_raises_for_invalid_input(self):
+        matrix = np.array([[1.0, 2.0]], dtype=np.float64)
+        vector = np.array([1.0], dtype=np.float64)
+        with self.assertRaises(ValueError):
+            transpose_matrix_vector_multiply(np.array([1.0, 2.0]), vector)
+        with self.assertRaises(ValueError):
+            transpose_matrix_vector_multiply(matrix, np.array([[1.0]]))
+        with self.assertRaises(ValueError):
+            transpose_matrix_vector_multiply(matrix, np.array([1.0, 2.0]))
 
     def test_power_iteration_symmetric_raises_for_invalid_input(self):
         square = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float64)
